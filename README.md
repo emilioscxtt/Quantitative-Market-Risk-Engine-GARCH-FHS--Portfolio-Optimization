@@ -1,42 +1,57 @@
-# Market Risk Engine: VaR & Monte Carlo Simulation 📉
+# 📈 Quantitative Market Risk Engine: GARCH-FHS & Portfolio Optimization
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/Status-Active-success)
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue?style=for-the-badge&logo=python)
+![Financial Modeling](https://img.shields.io/badge/Financial_Modeling-GARCH_%26_VaR-orange?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Validated-success?style=for-the-badge)
 
-## 📌 Project Overview
-This repository hosts a robust **Market Risk Engine** designed to quantify the potential loss of an equity portfolio under extreme market conditions. The model calculates **Value at Risk (VaR)** and **Expected Shortfall (CVaR)** using three industry-standard methodologies, applied specifically to Mexican Stock Exchange (BMV) assets (e.g., CEMEX, WALMEX, GFNORTE).
+## 📌 Executive Summary
+This repository implements a robust **Market Risk Engine** designed to quantify extreme losses in Latin American equity portfolios (BMV/IPC). Unlike traditional parametric models that assume Normality (Gaussian distribution), this engine addresses **Volatility Clustering** and **Leptokurtosis** (Heavy Tails) —characteristics inherent to emerging markets.
 
-The core implementation focuses on overcoming the limitations of Normal Distribution assumptions by introducing **Heavy-Tailed simulations** via Monte Carlo methods.
+The core core methodology utilizes **GARCH(1,1)** for volatility forecasting combined with **Filtered Historical Simulation (FHS)**, following the theoretical framework established in *Statistics of Financial Markets* (Franke, Härdle & Hafner).
 
-## 🛠️ Methodologies Implemented
-1.  **Parametric VaR (Variance-Covariance):** Assumes normality (Gaussian) of returns.
-2.  **Historical Simulation:** Non-parametric approach using empirical data distributions.
-3.  **Monte Carlo Simulation (Brownian Motion):**
-    * Generates 10,000+ stochastic price paths.
-    * Models drift and volatility based on historical parameters.
-    * *Key Feature:* Stress testing for "Black Swan" events.
+## 🧬 Theoretical Framework & Methodology
 
-## 💻 Tech Stack & Libraries
-* **Core:** `Python`, `NumPy`, `Pandas`
-* **Statistical Modeling:** `SciPy.stats` (Norm, T-Student distributions)
-* **Data Acquisition:** `yfinance` (Real-time market data)
-* **Visualization:** `Matplotlib`, `Seaborn`
+The model rejects the Homoscedasticity assumption. Instead, it models returns ($r_t$) as a stochastic process dependent on time-varying volatility ($\sigma_t$), based on **SFM Chapter 14 (Financial Time Series)**.
 
-## 📊 Key Results (Example)
-> *Comparing 1-Day 95% VaR for a generic BMV Portfolio:*
+### 1. GARCH(1,1) Process
+Volatility is modeled using a Generalized Autoregressive Conditional Heteroskedasticity process to capture shocks:
 
-| Method | Estimated Max Loss (VaR) | Accuracy (Backtest) |
-| :--- | :--- | :--- |
-| **Parametric** | $12,450 MXN | Underestimates Risk ⚠️ |
-| **Historical** | $14,200 MXN | Robust |
-| **Monte Carlo** | **$14,850 MXN** | **Most Conservative & Realistic** |
+$$\sigma^2_t = \omega + \alpha r^2_{t-1} + \beta \sigma^2_{t-1}$$
 
-## 🚀 How to Run
+### 2. Heavy-Tailed Distribution (t-Student)
+To account for "Black Swan" events, the standardized residuals ($\varepsilon_t$) are modeled using a Student's t-distribution ($\nu$ degrees of freedom) rather than a Normal distribution:
+
+$$r_t = \mu + \sigma_t \varepsilon_t, \quad \varepsilon_t \sim t_\nu(0,1)$$
+
+### 3. Filtered Historical Simulation (FHS)
+We employ a semi-parametric approach:
+1.  **Devolatilization:** Standardization of historical returns ($z_t = r_t / \sigma_t$) to obtain i.i.d. residuals.
+2.  **Bootstrapping:** Simulation of future scenarios using the empirical distribution of $z_t$.
+3.  **Revolatilization:** Scaling simulated residuals by the forecasted GARCH volatility ($\sigma_{t+1}$).
+
+## 🛠️ Key Features
+
+* **Dynamic Portfolio Construction:** Automated weighting and handling of data gaps for assets like `WALMEX`, `CEMEX`, `AMX`, `GFNORTE`.
+* **Risk Metrics:** Calculation of **Value at Risk (VaR)** and **Expected Shortfall (ES/CVaR)** at 95% and 99% confidence levels.
+* **Backtesting Engine:** "Reality check" visualizing exceptions (breaches) where actual losses exceeded VaR estimates.
+* **Model Diagnostics:** Statistical validation via **ACF (Autocorrelation Function)** of squared residuals and **QQ-Plots** to ensure the model successfully filters volatility clusters.
+
+## 📊 Visual Validation Results
+
+### 1. Backtesting (Dynamic VaR vs. Actual Returns)
+*The red line represents the dynamic risk threshold calculated by the GARCH model. Magenta points indicate market anomalies.*
+![Backtesting Results](img/backtesting_result.png)
+
+### 2. Statistical Diagnostics
+*Validation of "White Noise" behavior in standardized residuals, confirming model robustness.*
+![Diagnostics](img/model_diagnostics.png)
+
+## 🚀 Installation & Usage
+
 ```bash
 # Clone the repository
-git clone [https://github.com/emilioscxtt/Market-Risk-VaR-MonteCarlo.git](https://github.com/emilioscxtt/Market-Risk-VaR-MonteCarlo.git)
+git clone [https://github.com/YourUsername/Market-Risk-GARCH-FHS.git](https://github.com/YourUsername/Market-Risk-GARCH-FHS.git)
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the analysis notebook
-jupyter notebook notebooks/01_Risk_Analysis.ipynb
+# Install quantitative libraries
+pip install numpy pandas yfinance arch matplotlib seaborn statsmodels

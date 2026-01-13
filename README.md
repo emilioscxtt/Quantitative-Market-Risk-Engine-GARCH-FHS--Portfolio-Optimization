@@ -1,57 +1,63 @@
-# 📈 Quantitative Market Risk Engine: GARCH-FHS & Portfolio Optimization
+# 📉 Market Risk Engine: Single-Asset GARCH-FHS (CEMEX Case Study)
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?style=for-the-badge&logo=python)
-![Financial Modeling](https://img.shields.io/badge/Financial_Modeling-GARCH_%26_VaR-orange?style=for-the-badge)
+![Risk Model](https://img.shields.io/badge/Model-GARCH_(1,1)-orange?style=for-the-badge)
+![Status](https://img.shields.io/badge/Backtest-Passed_(4.05%25)-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Validated-success?style=for-the-badge)
 
-## 📌 Executive Summary
-This repository implements a robust **Market Risk Engine** designed to quantify extreme losses in Latin American equity portfolios (BMV/IPC). Unlike traditional parametric models that assume Normality (Gaussian distribution), this engine addresses **Volatility Clustering** and **Leptokurtosis** (Heavy Tails) —characteristics inherent to emerging markets.
+## 📌 Resumen Ejecutivo
+Este proyecto implementa un motor de **Riesgo de Mercado Cuantitativo** diseñado específicamente para activos de Mercados Emergentes (como la BMV). 
 
-The core core methodology utilizes **GARCH(1,1)** for volatility forecasting combined with **Filtered Historical Simulation (FHS)**, following the theoretical framework established in *Statistics of Financial Markets* (Franke, Härdle & Hafner).
+A diferencia de los modelos paramétricos tradicionales que asumen Normalidad (Curva de Gauss), este motor aborda dos hechos estilizados cruciales de los activos financieros mexicanos:
+1.  **Clustering de Volatilidad:** La volatilidad no es constante, se agrupa en el tiempo.
+2.  **Leptocurtosis (Fat Tails):** Los eventos extremos ocurren con mayor frecuencia de lo que predice una distribución normal.
 
-## 🧬 Theoretical Framework & Methodology
+El modelo fue calibrado con datos de **CEMEX (CEMEXCPO.MX)** obteniendo una tasa de éxito en el Backtesting del **95.95%** (Tasa de fallo del 4.05%), validando su robustez para la gestión de capital.
 
-The model rejects the Homoscedasticity assumption. Instead, it models returns ($r_t$) as a stochastic process dependent on time-varying volatility ($\sigma_t$), based on **SFM Chapter 14 (Financial Time Series)**.
+## 🧬 Metodología Cuantitativa
 
-### 1. GARCH(1,1) Process
-Volatility is modeled using a Generalized Autoregressive Conditional Heteroskedasticity process to capture shocks:
+El motor sigue el framework teórico de *Statistics of Financial Markets* (Franke, Härdle & Hafner), combinando modelado econométrico con simulación estocástica.
 
-$$\sigma^2_t = \omega + \alpha r^2_{t-1} + \beta \sigma^2_{t-1}$$
+### 1. GARCH(1,1) con Distribución t-Student
+Modelamos la varianza condicional ($\sigma^2_t$) para capturar la "memoria" del mercado:
 
-### 2. Heavy-Tailed Distribution (t-Student)
-To account for "Black Swan" events, the standardized residuals ($\varepsilon_t$) are modeled using a Student's t-distribution ($\nu$ degrees of freedom) rather than a Normal distribution:
+$$\sigma^2_t = \omega + \alpha \varepsilon^2_{t-1} + \beta \sigma^2_{t-1}$$
 
-$$r_t = \mu + \sigma_t \varepsilon_t, \quad \varepsilon_t \sim t_\nu(0,1)$$
+Se utilizan innovaciones con distribución **t-Student** (grados de libertad $\nu$ estimados dinámicamente) para capturar el riesgo de cola pesada.
 
-### 3. Filtered Historical Simulation (FHS)
-We employ a semi-parametric approach:
-1.  **Devolatilization:** Standardization of historical returns ($z_t = r_t / \sigma_t$) to obtain i.i.d. residuals.
-2.  **Bootstrapping:** Simulation of future scenarios using the empirical distribution of $z_t$.
-3.  **Revolatilization:** Scaling simulated residuals by the forecasted GARCH volatility ($\sigma_{t+1}$).
+### 2. Simulación Histórica Filtrada (FHS)
+Para el pronóstico de riesgo (VaR y ES), utilizamos un enfoque híbrido:
+1.  **Devolatilización:** Estandarización de residuos históricos ($z_t = r_t / \sigma_t$).
+2.  **Bootstrapping:** Muestreo aleatorio de 10,000 escenarios basado en el "ruido" empírico.
+3.  **Proyección:** Re-escalamiento con la volatilidad pronosticada para $T+1$.
 
-## 🛠️ Key Features
+## 📊 Resultados de Validación (Backtesting)
 
-* **Dynamic Portfolio Construction:** Automated weighting and handling of data gaps for assets like `WALMEX`, `CEMEX`, `AMX`, `GFNORTE`.
-* **Risk Metrics:** Calculation of **Value at Risk (VaR)** and **Expected Shortfall (ES/CVaR)** at 95% and 99% confidence levels.
-* **Backtesting Engine:** "Reality check" visualizing exceptions (breaches) where actual losses exceeded VaR estimates.
-* **Model Diagnostics:** Statistical validation via **ACF (Autocorrelation Function)** of squared residuals and **QQ-Plots** to ensure the model successfully filters volatility clusters.
+El modelo fue sometido a una prueba retrospectiva ("Reality Check") comparando el VaR 95% estimado contra los retornos reales diarios (2020-2025).
 
-## 📊 Visual Validation Results
+| Métrica | Resultado | Objetivo Teórico | Interpretación |
+| :--- | :--- | :--- | :--- |
+| **Total Observaciones** | ~1,250 días | - | Muestra representativa (incluye crisis COVID). |
+| **Tasa de Fallo** | **4.05%** | 5.00% | **Modelo Robusto y Conservador**. |
+| **Estatus** | ✅ ACEPTADO | 4% - 6% | Cumple con estándares de gestión de riesgo. |
 
-### 1. Backtesting (Dynamic VaR vs. Actual Returns)
-*The red line represents the dynamic risk threshold calculated by the GARCH model. Magenta points indicate market anomalies.*
-![Backtesting Results](img/backtesting_result.png)
+### Visualización del Backtesting
+*La línea roja representa el límite de riesgo dinámico. Los puntos magenta son las excepciones donde el mercado rompió la protección.*
+![Backtesting Graph](img/backtesting_result.png)
 
-### 2. Statistical Diagnostics
-*Validation of "White Noise" behavior in standardized residuals, confirming model robustness.*
-![Diagnostics](img/model_diagnostics.png)
+## 🔮 Pronóstico de Riesgo (Risk Forecasting)
 
-## 🚀 Installation & Usage
+El motor genera métricas de riesgo monetario para la toma de decisiones diaria (Mesa de Dinero).
 
-```bash
-# Clone the repository
-git clone [https://github.com/YourUsername/Market-Risk-GARCH-FHS.git](https://github.com/YourUsername/Market-Risk-GARCH-FHS.git)
+**Ejemplo de Output (Enero 2026):**
+* **VaR 95%:** Escudo primario de riesgo.
+* **Expected Shortfall (CVaR):** Pérdida promedio esperada en caso de colapso del mercado (Riesgo de Cola).
 
-# Install quantitative libraries
-pip install numpy pandas yfinance arch matplotlib seaborn statsmodels
+*Distribución de pérdidas simuladas para T+1:*
+![Distribution Graph](img/distribution_forecast.png)
+
+## 🛠️ Instalación y Uso
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone [https://github.com/TU_USUARIO/Market-Risk-GARCH.git](https://github.com/TU_USUARIO/Market-Risk-GARCH.git)
